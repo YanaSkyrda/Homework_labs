@@ -1,9 +1,12 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include <string>
+#include "tm_functions.h"
+
 using namespace std;
 
-//3, 12, 15, 18, 21, 24
+//3, 12, 15, 18, 21, 26
 
 struct Tree_node {
     int data;
@@ -16,6 +19,14 @@ struct BTree_node {
     BTree_node* left;
     BTree_node* right;
     BTree_node* parent;
+};
+
+struct Catalog_node {
+    string name;
+    float size;
+    tm last_update;
+    Catalog_node* parent;
+    vector<Catalog_node*> child;
 };
 
 Tree_node* new_node (int new_data) {
@@ -31,6 +42,15 @@ BTree_node* new_bin_node (int new_data) {
     curr->parent = nullptr;
     curr->left = nullptr;
     curr->right = nullptr;
+    return curr;
+}
+
+Catalog_node* new_catalog_node (string name_data, float size_data, tm upd_data) {
+    Catalog_node* curr = new Catalog_node;
+    curr->name = name_data;
+    curr->size = size_data;
+    curr->last_update = upd_data;
+    curr->parent = nullptr;
     return curr;
 }
 
@@ -140,8 +160,146 @@ void pre_binary_output (BTree_node* root, int level) {      //task 21
     }
 }
 
-void boolean_expressions (){
+float catalog_size (Catalog_node* root, float size){        //task 26
+    if (root->child.empty()) {size += root->size;}
+    for (int i = 0; i < root->child.size(); i++) {
+        catalog_size(root->child[i], size);
+    }
+    return size;
+}
 
+int files_amount (Catalog_node* root, int curr_amount) {
+    if (root->child.empty()) {curr_amount++;}
+    for (int i = 0; i < root->child.size(); i++) {
+        files_amount(root->child[i], curr_amount);
+    }
+    return curr_amount;
+}
+
+int subdirect_amount (Catalog_node* root, int curr_amount) {
+    if (!root->child.empty()) {curr_amount++;}
+    for (int i = 0; i < root->child.size(); i++) {
+        subdirect_amount(root->child[i], curr_amount);
+    }
+    return curr_amount;
+}
+
+void all_updates (Catalog_node* root, vector<tm>& vec_upd) {
+    vec_upd.push_back(root->last_update);
+    for (int i = 0; i < root->child.size(); i++) {
+        all_updates(root->child[i], vec_upd);
+    }
+}
+
+tm min_last_upd (Catalog_node* root) {
+    vector<tm> updates;
+    tm min_date;
+    all_updates(root, updates);
+    min_date = updates[0];
+    for (auto item : updates) {
+        if (item < min_date) {
+            min_date = item;
+        }
+    }
+    return min_date;
+}
+
+tm max_last_upd (Catalog_node* root) {
+    vector<tm> updates;
+    tm max_date;
+    all_updates(root, updates);
+    max_date = updates[0];
+    for (auto item : updates) {
+        if (item > max_date) {
+            max_date = item;
+        }
+    }
+    return max_date;
+}
+
+void copy_catalog (Catalog_node* root, Catalog_node* new_root) {
+    Catalog_node* curr_new;
+    curr_new = new_catalog_node(root->name, root->size, root->last_update);
+    curr_new->parent = new_root;
+    new_root->child.push_back(curr_new);
+    for (int i = 0; i < root->child.size(); i++) {
+        copy_catalog(root->child[i], curr_new);
+    }
+}
+
+void leave_by_name (string leave_name, Catalog_node* root) {
+    for (int i = 0; i < root->child.size(); i++) {
+        leave_by_name(leave_name, root->child[i]);
+    }
+    if (root->name != leave_name) {
+        for (int i = 0; i < root->child.size(); i++) {
+            (root->parent)->child.push_back(root->child[i]);
+        }
+        for (int i = 0; i < (root->parent)->child.size(); i++) {
+            if ((root->parent)->child[i] == root) {(root->parent)->child.erase((root->parent)->child.begin()+i);}
+        }
+        delete root;
+    }
+}
+
+void leave_by_size (float min_size, float max_size, Catalog_node* root) {
+    for (int i = 0; i < root->child.size(); i++) {
+        leave_by_size(min_size, max_size, root->child[i]);
+    }
+    if ((min_size!= -1&&root->size<min_size)||(max_size!= -1&&root->size>max_size)) {
+        for (int i = 0; i < root->child.size(); i++) {
+            (root->parent)->child.push_back(root->child[i]);
+        }
+        for (int i = 0; i < (root->parent)->child.size(); i++) {
+            if ((root->parent)->child[i] == root) {(root->parent)->child.erase((root->parent)->child.begin()+i);}
+        }
+        delete root;
+    }
+}
+
+void leave_by_update (tm min_date, tm max_date, Catalog_node* root) {
+    for (int i = 0; i < root->child.size(); i++) {
+        leave_by_update(min_date, max_date, root->child[i]);
+    }
+    if (root->last_update<min_date||root->last_update>max_date) {
+        for (int i = 0; i < root->child.size(); i++) {
+            (root->parent)->child.push_back(root->child[i]);
+        }
+        for (int i = 0; i < (root->parent)->child.size(); i++) {
+            if ((root->parent)->child[i] == root) {(root->parent)->child.erase((root->parent)->child.begin()+i);}
+        }
+        delete root;
+    }
+}
+
+void name_filter (Catalog_node* root, string name_filter, Catalog_node* new_catalog) {
+    copy_catalog(root, new_catalog);
+    leave_by_name(name_filter, new_catalog);
+}
+
+void size_filter (Catalog_node* root, float min_size, float max_size, Catalog_node* new_catalog) {
+    copy_catalog(root, new_catalog);
+    leave_by_size(min_size,max_size, new_catalog);
+}
+
+void update_filter (Catalog_node* root, tm min_date, tm max_date, Catalog_node* new_catalog) {
+    copy_catalog(root, new_catalog);
+    leave_by_update(min_date, max_date, new_catalog);
+}
+
+Catalog_node* filter_catalog (Catalog_node* root, string rule) {
+    Catalog_node* new_catalog = nullptr;
+    if (rule[0] == 'n') {
+        string name_filter;
+        for (int i = 5; i < rule.size(); i++) { name_filter += rule[i]; }
+
+    }
+    if (rule[0] == 's') {
+
+    }
+    if (rule[0] == 'u') {
+
+    }
 }
 
 int main() {
