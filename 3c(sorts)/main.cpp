@@ -143,7 +143,7 @@ void benchmark () {
 
 int main() {
     srand(time(0));
-    //demonstration();
+    demonstration();
     benchmark();
     return 0;
 }
