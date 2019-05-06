@@ -14,14 +14,12 @@ struct Tree_node {
     vector<Tree_node*> child;
     Tree_node* parent;
 };
-
 struct BTree_node {
     int data;
     BTree_node* left;
     BTree_node* right;
     BTree_node* parent;
 };
-
 struct Catalog_node {
     string name;
     float size;
@@ -38,7 +36,6 @@ Tree_node* new_node (int new_data) {
     curr->parent = nullptr;
     return curr;
 }
-
 BTree_node* new_bin_node (int new_data) {
     BTree_node* curr = new BTree_node;
     curr->data = new_data;
@@ -47,7 +44,6 @@ BTree_node* new_bin_node (int new_data) {
     curr->right = nullptr;
     return curr;
 }
-
 Catalog_node* new_catalog_node (string name_data, float size_data, tm upd_data) {
     Catalog_node* curr = new Catalog_node;
     curr->name = name_data;
@@ -80,7 +76,6 @@ Tree_node* insert (int insert_value, int input_index, Tree_node* root) {      //
     }
     return root;
 }
-
 Catalog_node* add_to_catalog (string name_data, float size_data, tm upd_data, int input_index, Catalog_node* root) {      //task 3
     Catalog_node* input_node = new_catalog_node(name_data, size_data, upd_data);
     queue<pair<Catalog_node*, int>> q;
@@ -104,7 +99,6 @@ Catalog_node* add_to_catalog (string name_data, float size_data, tm upd_data, in
     }
     return root;
 }
-
 void binary_insert (int insert_value, BTree_node** root) {       //task 18
     BTree_node* input_node = new_bin_node(insert_value);
 
@@ -179,6 +173,13 @@ void binary_interactive_output (BTree_node* root) {
     if (next == 2) {binary_interactive_output(curr_node->right);}
 
 }
+void pre_binary_output (BTree_node* root) {      //task 21
+    if (root != nullptr) {
+        cout << root->data << ' ';
+        if (root->left != nullptr) { pre_binary_output(root->left); }
+        if (root->right != nullptr) { pre_binary_output(root->right); }
+    }
+}
 
 void pre_catalog_output (Catalog_node* root) {
     if (root != nullptr) {
@@ -191,7 +192,7 @@ void delete_by_value (int deleting_value, Tree_node* root) {        //task 15
     for (int i = 0; i < root->child.size(); i++) {
         delete_by_value(deleting_value, root->child[i]);
     }
-    if (root->data == deleting_value) {
+    if (root->data == deleting_value && root->parent != nullptr) {
         for (int i = 0; i < root->child.size(); i++) {
             (root->parent)->child.push_back(root->child[i]);
         }
@@ -202,28 +203,18 @@ void delete_by_value (int deleting_value, Tree_node* root) {        //task 15
     }
 }
 
-void pre_binary_output (BTree_node* root) {      //task 21
-    if (root != nullptr) {
-        cout << root->data << ' ';
-        if (root->left != nullptr) { pre_binary_output(root->left); }
-        if (root->right != nullptr) { pre_binary_output(root->right); }
-    }
-}
-
 void catalog_size (Catalog_node* root, float* size){        //task 26
     if (root->child.empty()) {*size += root->size;}
     for (int i = 0; i < root->child.size(); i++) {
         catalog_size(root->child[i], size);
     }
 }
-
 void files_amount (Catalog_node* root, int* curr_amount) {
     if (root->child.empty()) {(*curr_amount)++;}
     for (int i = 0; i < root->child.size(); i++) {
         files_amount(root->child[i], curr_amount);
     }
 }
-
 void subdirect_amount (Catalog_node* root, int* curr_amount) {
     if (!root->child.empty()) {(*curr_amount)++;}
     for (int i = 0; i < root->child.size(); i++) {
@@ -237,7 +228,6 @@ void all_updates (Catalog_node* root, vector<tm>& vec_upd) {
         all_updates(root->child[i], vec_upd);
     }
 }
-
 tm min_last_upd (Catalog_node* root) {
     vector<tm> updates;
     tm min_date;
@@ -250,7 +240,6 @@ tm min_last_upd (Catalog_node* root) {
     }
     return min_date;
 }
-
 tm max_last_upd (Catalog_node* root) {
     vector<tm> updates;
     tm max_date;
@@ -264,74 +253,95 @@ tm max_last_upd (Catalog_node* root) {
     return max_date;
 }
 
-void copy_catalog (Catalog_node* root, Catalog_node** new_catalog) {
+Catalog_node* copy_catalog (Catalog_node* root) {
     if (root == nullptr) {
-        *new_catalog = nullptr;
-        return;
+        return nullptr;
     }
-    (*new_catalog) = new_catalog_node(root->name, root->size, root->last_update);
+    Catalog_node* new_catalog = new_catalog_node(root->name, root->size, root->last_update);
+    new_catalog->parent = root->parent;
     for (int i = 0; i < root->child.size(); i++) {
-        copy_catalog(root->child[i], &((*new_catalog)->child[i]));
+        Catalog_node* new_catalog_node = copy_catalog(root->child[i]);
+        new_catalog->child.push_back(new_catalog_node);
     }
+
+    return new_catalog;
 }
 
-void leave_by_name (string leave_name, Catalog_node* root) {
+bool leave_by_name (string leave_name, Catalog_node* root, Catalog_node* prev = nullptr) {
+    bool same_with_filtr = true;
     for (int i = 0; i < root->child.size(); i++) {
-        leave_by_name(leave_name, root->child[i]);
+        if(leave_by_name(leave_name, root->child[i], root)) {i--;}
     }
-    if (root->name != leave_name) {
-        for (int i = 0; i < root->child.size(); i++) {
-            (root->parent)->child.push_back(root->child[i]);
+    for (int i = 0; i < leave_name.size(); i++) {
+        if (root->name[i] != leave_name[i]) {
+            same_with_filtr = false;
+            break;
         }
-        for (int i = 0; i < (root->parent)->child.size(); i++) {
-            if ((root->parent)->child[i] == root) {(root->parent)->child.erase((root->parent)->child.begin()+i);}
+    }
+    if (!(same_with_filtr) && prev != nullptr) {
+        for (int i = 0; i < root->child.size(); i++) {
+            (prev)->child.push_back(root->child[i]);
+            (root->child[i])->parent = prev;
+        }
+        for (int i = 0; i < (prev)->child.size(); i++) {
+            if ((prev)->child[i] == root) {
+                (prev)->child.erase(prev->child.begin() + i);
+                i--;
+            }
         }
         delete root;
+        return 1;
     }
+    return 0;
 }
-
-void leave_by_size (float min_size, float max_size, Catalog_node* root) {
+bool leave_by_size (float min_size, float max_size, Catalog_node* root, Catalog_node* prev = nullptr) {
     for (int i = 0; i < root->child.size(); i++) {
-        leave_by_size(min_size, max_size, root->child[i]);
+        if(leave_by_size(min_size, max_size, root->child[i], root)) {i--;}
     }
-    if ((min_size!= -1&&root->size<min_size)||(max_size!= -1&&root->size>max_size)) {
+    if (((min_size!= -1&&root->size<min_size)||(max_size!= -1&&root->size>max_size))&& prev != nullptr) {
         for (int i = 0; i < root->child.size(); i++) {
-            (root->parent)->child.push_back(root->child[i]);
+            (prev)->child.push_back(root->child[i]);
+            (root->child[i])->parent = prev;
         }
-        for (int i = 0; i < (root->parent)->child.size(); i++) {
-            if ((root->parent)->child[i] == root) {(root->parent)->child.erase((root->parent)->child.begin()+i);}
+        for (int i = 0; i < (prev)->child.size(); i++) {
+            if (prev->child[i] == root) {prev->child.erase(prev->child.begin()+i);}
         }
         delete root;
+        return 1;
     }
+    return 0;
 }
-
-void leave_by_update (tm min_date, tm max_date, Catalog_node* root) {
+bool leave_by_update (tm min_date, tm max_date, Catalog_node* root, Catalog_node* prev = nullptr) {
     for (int i = 0; i < root->child.size(); i++) {
-        leave_by_update(min_date, max_date, root->child[i]);
+        if(leave_by_update(min_date, max_date, root->child[i], root)) {i--;}
     }
-    if (root->last_update<min_date||root->last_update>max_date) {
+    if ((root->last_update<min_date||root->last_update>max_date)&& prev != nullptr) {
         for (int i = 0; i < root->child.size(); i++) {
-            (root->parent)->child.push_back(root->child[i]);
+            (prev)->child.push_back(root->child[i]);
+            (root->child[i])->parent = prev;
         }
-        for (int i = 0; i < (root->parent)->child.size(); i++) {
-            if ((root->parent)->child[i] == root) {(root->parent)->child.erase((root->parent)->child.begin()+i);}
+        for (int i = 0; i < prev->child.size(); i++) {
+            if (prev->child[i] == root) {prev->child.erase(prev->child.begin()+i);}
         }
         delete root;
+        return 1;
     }
+    return 0;
 }
 
 void name_filter (Catalog_node* root, string name_filter, Catalog_node** new_catalog) {
-    copy_catalog(root, new_catalog);
+    *new_catalog = new_catalog_node(root->name, root->size, root->last_update);
+    (*new_catalog) = copy_catalog(root);
     leave_by_name(name_filter, *new_catalog);
 }
-
 void size_filter (Catalog_node* root, float min_size, float max_size, Catalog_node** new_catalog) {
-    copy_catalog(root, new_catalog);
+    *new_catalog = new_catalog_node(root->name, root->size, root->last_update);
+    *new_catalog = copy_catalog(root);
     leave_by_size(min_size,max_size, *new_catalog);
 }
-
 void update_filter (Catalog_node* root, tm min_date, tm max_date, Catalog_node** new_catalog) {
-    copy_catalog(root, new_catalog);
+    *new_catalog = new_catalog_node(root->name, root->size, root->last_update);
+    *new_catalog = copy_catalog(root);
     leave_by_update(min_date, max_date, *new_catalog);
 }
 
@@ -342,7 +352,6 @@ void demonstration_insert(Tree_node* root, int index) {
     pre_output(root);
     cout<<endl;
 };
-
 void demonstration_catalog_insert(Catalog_node** root, int index) {
     int size = rand()%101, name_size =rand()%5+1;
     tm date = random_time();
@@ -355,7 +364,6 @@ void demonstration_catalog_insert(Catalog_node** root, int index) {
     pre_catalog_output(*root);
     cout<<endl;
 };
-
 void demonstration_bin_insert(BTree_node* root) {
     int new_value = rand()%10;
     cout<<"Insert new node"<<'('<<new_value<<"): ";
@@ -363,7 +371,6 @@ void demonstration_bin_insert(BTree_node* root) {
     pre_binary_output(root);
     cout<<endl;
 };
-
 void demonstration_delete(Tree_node* root) {
     int new_value = rand()%10;
     cout<<"Delete nodes with value "<<new_value<<": ";
@@ -379,6 +386,7 @@ void demonstration() {
     string letter = "";
     tm date;
 
+    cout<<"\nGeneral tree: \n"<<endl;
     cout<<"Created tree only with root: ";
     pre_output(tree_root);
     cout<<endl;
@@ -394,11 +402,12 @@ void demonstration() {
         demonstration_delete(tree_root);
     }
 
+    cout<<"\nBinary tree: \n"<<endl;
     for (int i = 0; i < 7; i++) {
         demonstration_bin_insert(bin_tree_root);
     }
 
-    cout<<"Catalog tree: "<<endl;
+    cout<<"\nCatalog tree: \n"<<endl;
     for (int i = 0; i<4; i++) {
        demonstration_catalog_insert(&catalog_root, 0);
     }
@@ -410,32 +419,42 @@ void demonstration() {
     float size = 0;
     catalog_size(catalog_root, &size);
     cout<<"General size of catalog: " << size <<endl;
+
     int amount = 0;
     files_amount(catalog_root, &amount);
     cout<<"Amount of files in catalog: " << amount <<endl;
+
     amount = 0;
     subdirect_amount(catalog_root, &amount);
     cout<<"Amount of subdirectories: " << amount <<endl;
+
     date = min_last_upd(catalog_root);
     cout<<"Minimum last update time: " << date<<endl;
+
     date = max_last_upd(catalog_root);
     cout<<"Maximum last update time: " << date <<endl;
+
     Catalog_node* filtred_catalog = nullptr;
     letter += (char) (rand()%26 + 97);
-    cout<<"Name filter (only nodes that begins on "<<letter<<"): "<<endl;
+    cout<<"Name filter (only nodes that begins on "<<letter<<" (plus root)): "<<endl;
     name_filter(catalog_root, letter, &filtred_catalog);
     pre_catalog_output(filtred_catalog);
+    cout<<endl;
+
     filtred_catalog = nullptr;
-    cout<<"Size filter (only nodes with size more than 30): "<<endl;
+    cout<<"Size filter (only nodes with size more than 30 (plus root)): "<<endl;
     size_filter(catalog_root, 30, -1, &filtred_catalog);
     pre_catalog_output(filtred_catalog);
+    cout<<endl;
+
     filtred_catalog = nullptr;
     tm min_date = random_time();
     tm max_date = random_time();
     while (min_date > max_date) { max_date = random_time(); }
-    cout<<"Update filter (only nodes with last update earlier than "<<max_date<<"and later than" << min_date<<"): "<<endl;
+    cout<<"Update filter (only nodes with last update earlier than "<<max_date<<" and later than " << min_date<<" (plus root)): "<<endl;
     update_filter(catalog_root,min_date, max_date, &filtred_catalog);
     pre_catalog_output(filtred_catalog);
+    cout<<endl;
 }
 
 void interactive_generic(Tree_node** root) {
@@ -479,7 +498,6 @@ void interactive_generic(Tree_node** root) {
     }
     interactive_generic(root);
 }
-
 void interactive_binary(BTree_node** root) {
     int mode = 0, value;
     cout<<"Create new tree - enter 1"<<endl;
@@ -520,7 +538,6 @@ void interactive_binary(BTree_node** root) {
     }
     interactive_binary(root);
 }
-
 void interactive_catalog (Catalog_node** root) {
     int mode = 0, index = 0;
     Catalog_node* filtred = nullptr;
@@ -553,7 +570,7 @@ void interactive_catalog (Catalog_node** root) {
         case 2: {
             cout<<"Enter name, size, date and index for insert"<<endl;
             cin>>name>>size>>date>>index;
-            add_to_catalog(name,size,date,index,*root);
+            *root = add_to_catalog(name,size,date,index,*root);
             break;
         }
         case 3: {
@@ -639,7 +656,6 @@ int interactive_options() {
     cin>>mode;
     return mode;
 }
-
 void interactive() {
     int mode = 0;
     mode = interactive_options();
@@ -669,8 +685,14 @@ void interactive() {
 }
 
 int main() {
+    int mode;
     srand(time(0));
-    //demonstration();
-    interactive();
+
+    cout << "For interactive mode enter 1" << endl;
+    cout << "For demonstration mode enter 2" << endl;
+    cin>>mode;
+    if (mode == 1) {interactive();}
+    if (mode == 2) {demonstration();}
+
     return 0;
 }
