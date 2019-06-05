@@ -3,10 +3,12 @@
 #include <ctime>
 #include<queue>
 #include<algorithm>
+#include<string>
+#include<fstream>
 
 using namespace std;
 
-const int max_vert_count = 20;
+const int max_vert_count = 1000;
 
 struct graph_matrix {
     int adjacent[max_vert_count][max_vert_count];
@@ -40,7 +42,6 @@ void add_to_matr (graph_matrix& graph, int vert1, int vert2, int weight = 1) {
         graph.adjacent[vert2][vert1] = weight;
     }
 };
-
 void add_to_struct (graph_struct& graph, int vert1, int vert2, int weight = 1) {
     bool already_in_graph = false;
     for (int edge = 0; edge < (graph).adjacent[vert1].size(); edge++) {
@@ -72,7 +73,6 @@ void output_matrix_graph (graph_matrix& graph) {
         cout<<endl;
     }
 }
-
 void output_struct_graph (graph_struct& graph) {
     for (int i = 0; i < graph.vertex_count; i++) {
         cout<<i<<": ";
@@ -102,7 +102,6 @@ graph_matrix* create_random_matrg(int vertex_count, int edge_count, bool is_orie
     }
     return graph;
 }
-
 graph_struct* create_random_structg(int vertex_count, int edge_count, bool is_oriented = false, bool is_weighed = false) {
     graph_struct* graph = new graph_struct(vertex_count);
     (*graph).is_oriented = is_oriented;
@@ -141,7 +140,6 @@ graph_matrix* struct_to_matr (graph_struct& graph) {
     }
     return new_graph;
 }
-
 graph_struct* matr_to_struct (graph_matrix& graph) {
     graph_struct* new_graph = new graph_struct(graph.vertex_count);
     (*new_graph).is_oriented = graph.is_oriented;
@@ -172,7 +170,6 @@ bool is_cyclic_matr_rec(int curr_vertex, bool* visited, bool *recStack, graph_ma
     recStack[curr_vertex] = false;
     return false;
 }
-
 bool is_cyclic_matr (graph_matrix& graph) {
     bool visited[max_vert_count];
     bool stack[max_vert_count];
@@ -204,7 +201,6 @@ bool is_cyclic_struct_rec(int curr_vertex, bool* visited, bool *recStack, graph_
     recStack[curr_vertex] = false;
     return false;
 }
-
 bool is_cyclic_str (graph_struct& graph) {
     bool visited[max_vert_count];
     bool stack[max_vert_count];
@@ -221,10 +217,8 @@ bool is_cyclic_str (graph_struct& graph) {
 }
 
 bool compare_weight (pair<int,int> left, pair<int,int> right) {
-    if (left.second<right.second) {return true;}
-    return false;
+    return left.second<right.second;
 }
-
 void bfs_matr_rec(int curr_vertex, vector<bool>& visited, graph_matrix& graph, bool by_weight = false) {
     queue<int> q;
     vector<pair<int, int>> edges_weight;
@@ -253,7 +247,6 @@ void bfs_matr_rec(int curr_vertex, vector<bool>& visited, graph_matrix& graph, b
 
     }
 }
-
 void bfs_matr(graph_matrix& graph, bool by_weight) {
     vector<bool> visited(max_vert_count, false);
     for (int curr_vertex = 0; curr_vertex < graph.vertex_count; curr_vertex++) {
@@ -287,7 +280,6 @@ void bfs_struct_rec(int curr_vertex, vector<bool>& visited, graph_struct& graph,
         }
     }
 }
-
 void bfs_struct(graph_struct& graph, bool by_weight = false) {
     vector<bool> visited(max_vert_count, false);
     for (int curr_vertex = 0; curr_vertex < graph.vertex_count; curr_vertex++) {
@@ -324,7 +316,6 @@ vector<vector<int>> Floyd_matr (graph_matrix& graph) {
     }
     return distance;
 }
-
 vector<int> Floyd_matr_all_for_one (graph_matrix& graph, int vertex) {
     vector<vector<int>> distance;
     vector<int> result;
@@ -334,7 +325,6 @@ vector<int> Floyd_matr_all_for_one (graph_matrix& graph, int vertex) {
     }
     return result;
 }
-
 int Floyd_matr_between_two (graph_matrix& graph, int vertex1, int vertex2) {
     vector<vector<int>> distance = Floyd_matr(graph);
     return (distance[vertex1][vertex2]);
@@ -374,7 +364,6 @@ vector<vector<int>> Floyd_struct (graph_struct& graph) {
     }
     return distance;
 }
-
 vector<int> Floyd_struct_all_for_one (graph_struct& graph, int vertex) {
     vector<vector<int>> distance;
     vector<int> result;
@@ -384,7 +373,6 @@ vector<int> Floyd_struct_all_for_one (graph_struct& graph, int vertex) {
     }
     return result;
 }
-
 int Floyd_struct_between_two (graph_struct& graph, int vertex1, int vertex2) {
     vector<vector<int>> distance = Floyd_struct(graph);
     return (distance[vertex1][vertex2]);
@@ -401,7 +389,6 @@ void dfs_for_topological_matr (graph_matrix& graph, int vertex, vector<bool>& vi
 
     result.push_back(vertex);
 }
-
 vector<int> topological_sort_matr(graph_matrix& graph) {
     vector<bool> visited;
     vector<int> result;
@@ -429,7 +416,6 @@ void dfs_for_topological_struct(graph_struct& graph, int vertex, vector<bool>& v
 
     result.push_back(vertex);
 }
-
 vector<int> topological_sort_struct(graph_struct& graph) {
     vector<bool> visited;
     vector<int> result;
@@ -492,7 +478,6 @@ graph_matrix* bfs_matr_for_span(graph_matrix& graph, bool by_weight = false) {
     }
     return result;
 }
-
 graph_struct* bfs_struct_for_span(graph_struct& graph, bool by_weight = false) {
     queue<int> q;
     vector<pair<int, int>> edges_weight;
@@ -540,7 +525,6 @@ graph_struct* bfs_struct_for_span(graph_struct& graph, bool by_weight = false) {
 struct boruvka_subset {
     vector<int> vertexes;
 };
-
 pair<int,int> lowest_in_subset (boruvka_subset* sub, vector<pair<int,int>>& lows) {
     int min = lows[sub->vertexes[0]].second;
     pair<int,int> vert_with_min = make_pair(sub->vertexes[0], lows[sub->vertexes[0]].first);
@@ -552,7 +536,6 @@ pair<int,int> lowest_in_subset (boruvka_subset* sub, vector<pair<int,int>>& lows
     }
     return vert_with_min;
 }
-
 int find_subset_by_vert (vector<boruvka_subset>& subs, int vert, int amount_of_component) {
     for (int i = 0; i < amount_of_component; i++) {
         for (int j = 0; j < subs[i].vertexes.size(); j++) {
@@ -560,7 +543,6 @@ int find_subset_by_vert (vector<boruvka_subset>& subs, int vert, int amount_of_c
         }
     }
 }
-
 void union_subsets (vector<boruvka_subset>& subs, int vert1, int vert2, int* amount_of_component) {
     int subset_of_vert1, subset_of_vert2;
     subset_of_vert1 = find_subset_by_vert(subs, vert1, *amount_of_component);
@@ -613,7 +595,6 @@ graph_matrix* boruvka_matr(graph_matrix& graph) {
     }
     return result;
 }
-
 graph_struct* boruvka_struct(graph_struct& graph) {
     graph_struct* result = new graph_struct(graph.vertex_count);
     vector<boruvka_subset> subsets;
@@ -676,7 +657,6 @@ int weight_of_matr_graph (graph_matrix& graph) {
   }
   return weight;
 }
-
 int weight_of_struct_graph (graph_struct& graph) {
     int weight = 0;
 
@@ -697,7 +677,6 @@ void demonstration_add_to_matr (graph_matrix& graph, int verts) {
     add_to_matr(graph, vert1, vert2, weight);
     output_matrix_graph(graph);
 }
-
 void demonstration_add_to_struct (graph_struct& graph, int verts) {
     int vert1 = rand()%verts;
     int vert2 = rand()%verts;
@@ -1250,15 +1229,84 @@ void interactive() {
     }
 }
 
+void benchmark() {
+        int count;
+        clock_t benchmark_clock;
+        ofstream benchmark_results_file;
+        benchmark_results_file.open("benchmark_result.txt");
+
+        benchmark_results_file<<"Results with matrix:"<<"\r\n";
+        count = 10;
+        while  (count <= max_vert_count) {
+            benchmark_clock = clock();
+            int verts = count;
+            int edges = count*count/4;
+
+            graph_matrix* mgraph = create_random_matrg(verts, edges, true, true);
+            matr_to_struct(*mgraph);
+            is_cyclic_matr(*mgraph);
+            Floyd_matr(*mgraph);
+            int vert1 = rand()%((*mgraph).vertex_count);
+            Floyd_matr_all_for_one(*mgraph, vert1);
+            int vert2 = rand()%((*mgraph).vertex_count);
+            vert1 =  rand()%((*mgraph).vertex_count);
+            Floyd_matr_between_two(*mgraph, vert1,vert2);
+            if (!is_cyclic_matr(*mgraph)) topological_sort_matr(*mgraph);
+            bfs_matr_for_span(*mgraph);
+            bfs_matr_for_span(*mgraph, true);
+            boruvka_matr(*mgraph);
+
+
+            benchmark_results_file<<count<<' '<<((double) (clock() - benchmark_clock) / CLOCKS_PER_SEC)<<"\r\n";
+            cout<<count<<' '<<((double) (clock() - benchmark_clock) / CLOCKS_PER_SEC)<<endl;
+
+            if (((double) (clock() - benchmark_clock) / CLOCKS_PER_SEC) > 10) {break;}
+            count += 20;
+
+        }
+
+        benchmark_results_file<<"Results with struct:"<<"\r\n";
+        count = 10;
+    while  (count <= max_vert_count) {
+        benchmark_clock = clock();
+        int verts = count;
+        int edges = count*count/4;
+
+        graph_struct* graph = create_random_structg(verts, edges, true, true);
+        struct_to_matr(*graph);
+        is_cyclic_str(*graph);
+        Floyd_struct(*graph);
+        int vert1 = rand()%((*graph).vertex_count);
+        Floyd_struct_all_for_one(*graph, vert1);
+        int vert2 = rand()%((*graph).vertex_count);
+        vert1 =  rand()%((*graph).vertex_count);
+        Floyd_struct_between_two(*graph, vert1,vert2);
+        if (!is_cyclic_str(*graph)) topological_sort_struct(*graph);
+        bfs_struct_for_span(*graph);
+        bfs_struct_for_span(*graph, true);
+        boruvka_struct(*graph);
+
+        benchmark_results_file<<count<<' '<<((double) (clock() - benchmark_clock) / CLOCKS_PER_SEC)<<"\r\n";
+        cout<<count<<' '<<((double) (clock() - benchmark_clock) / CLOCKS_PER_SEC)<<endl;
+
+        if (((double) (clock() - benchmark_clock) / CLOCKS_PER_SEC) > 10) {break;}
+        count += 20;
+
+    }
+}
+
 int main() {
     srand(time(0));
 
     int mode;
     cout << "For interactive mode enter 1" << endl;
     cout << "For demonstration mode enter 2" << endl;
+    cout << "For benchmark mode enter 3" << endl;
     cin>>mode;
     if (mode == 1) {interactive();}
     if (mode == 2) {demonstration();}
+    if (mode == 3) {benchmark();}
+
 
     return 0;
 }
