@@ -8,14 +8,14 @@
 
 using namespace std;
 
-const int max_vert_count = 1000;
+const int max_vert_count = 500;
 
 struct graph_matrix {
     int adjacent[max_vert_count][max_vert_count];
     int vertex_count;
     bool is_oriented = false;
 
-    graph_matrix(int vertices) {
+    explicit graph_matrix(int vertices) {
         vertex_count = vertices;
         for (int i = 0; i < vertex_count; i++) {
             for(int j = 0; j < vertex_count; j++) {
@@ -30,7 +30,7 @@ struct graph_struct {
     int vertex_count;
     bool is_oriented = false;
 
-    graph_struct(int vertices) {
+    explicit graph_struct(int vertices) {
         vertex_count = vertices;
         adjacent.resize(vertices);
     }
@@ -291,7 +291,7 @@ void bfs_struct(graph_struct& graph, bool by_weight = false) {
 vector<vector<int>> Floyd_matr (graph_matrix& graph) {
     vector<vector<int>> distance;
 
-    int matrix[graph.vertex_count][graph.vertex_count];
+    int matrix[max_vert_count][max_vert_count];
     for (int i = 0; i < graph.vertex_count; i++) {
         for (int j = 0; j < graph.vertex_count; j++) {
             matrix[i][j] = graph.adjacent[i][j];
@@ -333,7 +333,7 @@ int Floyd_matr_between_two (graph_matrix& graph, int vertex1, int vertex2) {
 vector<vector<int>> Floyd_struct (graph_struct& graph) {
     vector<vector<int>> distance;
 
-    int matrix[graph.vertex_count][graph.vertex_count];
+    int matrix[max_vert_count][max_vert_count];
     for (int i = 0; i < graph.vertex_count; i++) {
         for (int j = 0; j < graph.vertex_count; j++) {
             matrix[i][j] = 0;
