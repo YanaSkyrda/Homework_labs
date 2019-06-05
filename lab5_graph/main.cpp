@@ -786,7 +786,11 @@ void demonstration() {
     mgraph = create_random_matrg(6,10,false,true);
     output_matrix_graph(*mgraph);
     graph_matrix* matr_result = bfs_matr_for_span(*mgraph);
-    cout<<"Spanning tree by bfs."<<endl;
+    cout<<"Spanning tree bfs by number."<<endl;
+    output_matrix_graph(*matr_result);
+    cout<<"Weight of tree: "<<weight_of_matr_graph(*matr_result)<<endl;
+    matr_result = bfs_matr_for_span(*mgraph, true);
+    cout<<"Spanning tree bfs by weight."<<endl;
     output_matrix_graph(*matr_result);
     cout<<"Weight of tree: "<<weight_of_matr_graph(*matr_result)<<endl;
 
@@ -873,7 +877,11 @@ void demonstration() {
     sgraph = create_random_structg(6,10,false,true);
     output_struct_graph(*sgraph);
     graph_struct* struct_result = bfs_struct_for_span(*sgraph);
-    cout<<"Spanning tree by bfs."<<endl;
+    cout<<"Spanning tree bfs by number."<<endl;
+    output_struct_graph(*struct_result);
+    cout<<"Weight of tree: "<<weight_of_struct_graph(*struct_result)<<endl;
+    struct_result = bfs_struct_for_span(*sgraph, true);
+    cout<<"Spanning tree bfs by weight."<<endl;
     output_struct_graph(*struct_result);
     cout<<"Weight of tree: "<<weight_of_struct_graph(*struct_result)<<endl;
 
@@ -885,8 +893,372 @@ void demonstration() {
 
 }
 
+void interactive();
+void interactive_matrix(graph_matrix**);
+void interactive_struct(graph_struct**);
+
+void interactive_matrix (graph_matrix** graph) {
+    int mode = 0;
+
+    string name;
+    cout<<"Create new graph - enter 1"<<endl;
+    cout<<"Add edge to the graph - enter 2"<<endl;
+    cout<<"Output graph - enter 3"<<endl;
+    cout<<"Create random graph - enter 4"<<endl;
+    cout<<"Transform graph to struct representation - enter 5"<<endl;
+    cout<<"Check if graph is acyclic - enter 6"<<endl;
+    cout<<"Travel through the graph - enter 7"<<endl;
+    cout<<"Find minimal distances (Floyd's algorithm) - enter 8"<<endl;
+    cout<<"Topological sort (by dfs)) - enter 9"<<endl;
+    cout<<"Create spanning tree (by bfs)) - enter 10"<<endl;
+    cout<<"Create minimal spanning tree (Boruvka's algorithm)) - enter 11"<<endl;
+    cout<<"Back to main menu - enter 0"<<endl;
+    cin>>mode;
+
+    switch(mode) {
+        case 0: {
+            interactive();
+            return;
+        }
+        case 1: {
+            cout<<"Enter number of vertices"<<endl;
+            int amount;
+            cin>>amount;
+            *graph = new graph_matrix(amount);
+            cout<<"Is graph oriented?"<<endl;
+            string properties;
+            cin>>properties;
+            if (properties == "yes") {(*graph)->is_oriented = true;}
+            else {(*graph)->is_oriented = false;}
+            break;
+        }
+        case 2: {
+            cout<<"Enter vertices to connect and weight of edge"<<endl;
+            int vert1, vert2, weight;
+            cin>>vert1>>vert2>>weight;
+            add_to_matr(**graph, vert1, vert2, weight);
+            break;
+        }
+        case 3: {
+            output_matrix_graph(**graph);
+            break;
+        }
+        case 4: {
+            cout<<"Enter number of vertices and edges"<<endl;
+            int vertices, edges;
+            cin>>vertices>>edges;
+            bool oriented = false;
+            cout<<"Is graph oriented?"<<endl;
+            string answer;
+            cin>>answer;
+            if (answer == "yes") {oriented = true;}
+            cout<<"Is graph weighted?"<<endl;
+            cin>>answer;
+            if (answer == "yes") {*graph = create_random_matrg(vertices, edges, oriented,true);}
+            else {*graph = create_random_matrg(vertices, edges, oriented);}
+            break;
+        }
+        case 5: {
+            graph_struct* graph_str = matr_to_struct(**graph);
+            output_struct_graph(*graph_str);
+            cout<<"Would you like to work with the struct graph now?"<<endl;
+            string answer;
+            cin>>answer;
+            if (answer == "yes") {
+                interactive_struct(&graph_str);
+                return;
+            }
+            break;
+        }
+        case 6: {
+            cout<<"Is graph acyclic?"<<endl;
+            if (is_cyclic_matr(**graph)) {cout<<"no";}
+            else {cout<<"yes";}
+            break;
+        }
+        case 7: {
+            int option;
+            cout<<"For travel by number enter 1"<<endl;
+            cout<<"For travel by weight enter 2"<<endl;
+            cin>>option;
+            if (option == 1) {bfs_matr(**graph, false);}
+            if (option == 2) {bfs_matr(**graph, true);}
+            break;
+        }
+        case 8: {
+            int option;
+            cout<<"For finding all the minimum distance enter 1"<<endl;
+            cout<<"For finding all minimum distances for one vertex enter 2"<<endl;
+            cout<<"For finding minimum distance between two vertices enter 3"<<endl;
+            cin>>option;
+            if (option == 1) {
+                vector<vector<int>> result = Floyd_matr(**graph);
+                for (int i = 0; i < result.size(); i++) {
+                    for (int j = 0; j < result.size(); j++) {
+                        cout<<result[i][j]<<"  ";
+                    }
+                    cout<<endl;
+                }
+            }
+            if (option == 2) {
+                int vert;
+                cout << "Enter vertex" << endl;
+                cin>>vert;
+                vector<int> result = Floyd_matr_all_for_one(**graph, vert);
+                for (int i = 0; i < (**graph).vertex_count; i++) {
+                    cout << result[i] << "  ";
+                }
+                cout << endl;
+            }
+            if (option == 3) {
+                int vert1, vert2;
+                cout<<"Enter two vertices"<<endl;
+                cin>>vert1>>vert2;
+                cout <<Floyd_matr_between_two(**graph, vert1,vert2)<<endl;
+            }
+            break;
+        }
+        case 9: {
+            vector<int> result = topological_sort_matr(**graph);
+            if (!result.empty()) {
+                for (int i = 0; i < (**graph).vertex_count; i++) {
+                    cout << result[i] << "  ";
+                }
+                cout << endl;
+            }
+            break;
+        }
+        case 10: {
+            int option;
+            cout<<"For finding spanning tree by number enter 1"<<endl;
+            cout<<"For finding spanning tree by weight enter 2"<<endl;
+            cin>>option;
+            if (option == 1) {
+                graph_matrix* matr_result = bfs_matr_for_span(**graph);
+                output_matrix_graph(*matr_result);
+                cout<<"Weight of tree: "<<weight_of_matr_graph(*matr_result)<<endl;
+            }
+            if (option == 2) {
+                graph_matrix* matr_result = bfs_matr_for_span(**graph, true);
+                output_matrix_graph(*matr_result);
+                cout<<"Weight of tree: "<<weight_of_matr_graph(*matr_result)<<endl;
+            }
+            break;
+        }
+        case 11: {
+            graph_matrix* matr_result = boruvka_matr(**graph);
+            output_matrix_graph(*matr_result);
+            cout<<"Weight of tree: "<<weight_of_matr_graph(*matr_result)<<endl;
+            break;
+        }
+        default: {
+            cout<<"Wrong number!"<<endl;
+            break;
+        }
+    }
+    interactive_matrix(graph);
+}
+void interactive_struct (graph_struct** graph) {
+    int mode = 0;
+
+    string name;
+    cout<<"Create new graph - enter 1"<<endl;
+    cout<<"Add edge to the graph - enter 2"<<endl;
+    cout<<"Output graph - enter 3"<<endl;
+    cout<<"Create random graph - enter 4"<<endl;
+    cout<<"Transform graph to matrix representation - enter 5"<<endl;
+    cout<<"Check if graph is acyclic - enter 6"<<endl;
+    cout<<"Travel through the graph - enter 7"<<endl;
+    cout<<"Find minimal distances (Floyd's algorithm) - enter 8"<<endl;
+    cout<<"Topological sort (by dfs)) - enter 9"<<endl;
+    cout<<"Create spanning tree (by bfs)) - enter 10"<<endl;
+    cout<<"Create minimal spanning tree (Boruvka's algorithm)) - enter 11"<<endl;
+    cout<<"Back to main menu - enter 0"<<endl;
+    cin>>mode;
+
+    switch(mode) {
+        case 0: {
+            interactive();
+            return;
+        }
+        case 1: {
+            cout<<"Enter number of vertices"<<endl;
+            int amount;
+            cin>>amount;
+            *graph = new graph_struct(amount);
+            cout<<"Is graph oriented?"<<endl;
+            string properties;
+            cin>>properties;
+            if (properties == "yes") {(*graph)->is_oriented = true;}
+            else {(*graph)->is_oriented = false;}
+            break;
+        }
+        case 2: {
+            cout<<"Enter vertices to connect and weight of edge"<<endl;
+            int vert1, vert2, weight;
+            cin>>vert1>>vert2>>weight;
+            add_to_struct(**graph, vert1, vert2, weight);
+            break;
+        }
+        case 3: {
+            output_struct_graph(**graph);
+            break;
+        }
+        case 4: {
+            cout<<"Enter number of vertices and edges"<<endl;
+            int vertices, edges;
+            cin>>vertices>>edges;
+            bool oriented = false;
+            cout<<"Is graph oriented?"<<endl;
+            string answer;
+            cin>>answer;
+            if (answer == "yes") {oriented = true;}
+            cout<<"Is graph weighted?"<<endl;
+            cin>>answer;
+            if (answer == "yes") {*graph = create_random_structg(vertices, edges, oriented,true);}
+            else {*graph = create_random_structg(vertices, edges, oriented);}
+            break;
+        }
+        case 5: {
+            graph_matrix* graph_matr = struct_to_matr(**graph);
+            output_matrix_graph(*graph_matr);
+            cout<<"Would you like to work with the matrix graph now?"<<endl;
+            string answer;
+            cin>>answer;
+            if (answer == "yes") {
+                interactive_matrix(&graph_matr);
+                return;
+            }
+            break;
+        }
+        case 6: {
+            cout<<"Is graph acyclic?"<<endl;
+            if (is_cyclic_str(**graph)) {cout<<"no";}
+            else {cout<<"yes";}
+            break;
+        }
+        case 7: {
+            int option;
+            cout<<"For travel by number enter 1"<<endl;
+            cout<<"For travel by weight enter 2"<<endl;
+            cin>>option;
+            if (option == 1) {bfs_struct(**graph, false);}
+            if (option == 2) {bfs_struct(**graph, true);}
+            break;
+        }
+        case 8: {
+            int option;
+            cout<<"For finding all the minimum distance enter 1"<<endl;
+            cout<<"For finding all minimum distances for one vertex enter 2"<<endl;
+            cout<<"For finding minimum distance between two vertices enter 3"<<endl;
+            cin>>option;
+            if (option == 1) {
+                vector<vector<int>> result = Floyd_struct(**graph);
+                for (int i = 0; i < result.size(); i++) {
+                    for (int j = 0; j < result.size(); j++) {
+                        cout<<result[i][j]<<"  ";
+                    }
+                    cout<<endl;
+                }
+            }
+            if (option == 2) {
+                int vert;
+                cout << "Enter vertex" << endl;
+                cin>>vert;
+                vector<int> result = Floyd_struct_all_for_one(**graph, vert);
+                for (int i = 0; i < (**graph).vertex_count; i++) {
+                    cout << result[i] << "  ";
+                }
+                cout << endl;
+            }
+            if (option == 3) {
+                int vert1, vert2;
+                cout<<"Enter two vertices"<<endl;
+                cin>>vert1>>vert2;
+                cout <<Floyd_struct_between_two(**graph, vert1,vert2)<<endl;
+            }
+            break;
+        }
+        case 9: {
+            vector<int> result = topological_sort_struct(**graph);
+            if (!result.empty()) {
+                for (int i = 0; i < (**graph).vertex_count; i++) {
+                    cout << result[i] << "  ";
+                }
+                cout << endl;
+            }
+            break;
+        }
+        case 10: {
+            int option;
+            cout<<"For finding spanning tree by number enter 1"<<endl;
+            cout<<"For finding spanning tree by weight enter 2"<<endl;
+            cin>>option;
+            if (option == 1) {
+                graph_struct* result = bfs_struct_for_span(**graph);
+                output_struct_graph(*result);
+                cout<<"Weight of tree: "<<weight_of_struct_graph(*result)<<endl;
+            }
+            if (option == 2) {
+                graph_struct* result = bfs_struct_for_span(**graph, true);
+                output_struct_graph(*result);
+                cout<<"Weight of tree: "<<weight_of_struct_graph(*result)<<endl;
+            }
+            break;
+        }
+        case 11: {
+            graph_struct* result = boruvka_struct(**graph);
+            output_struct_graph(*result);
+            cout<<"Weight of tree: "<<weight_of_struct_graph(*result)<<endl;
+            break;
+        }
+        default: {
+            cout<<"Wrong number!"<<endl;
+            break;
+        }
+    }
+    interactive_struct(graph);
+}
+int interactive_options() {
+    int mode = 0;
+    cout<<"Work with matrix representation - enter 1"<<endl;
+    cout<<"Work with struct representation - enter 2"<<endl;
+    cout<<"Exit - enter 0"<<endl;
+    cin>>mode;
+    return mode;
+}
+void interactive() {
+    int mode = 0;
+    mode = interactive_options();
+    switch(mode) {
+        case 0: {
+            return;
+        }
+        case 1: {
+            graph_matrix* graph = nullptr;
+            interactive_matrix(&graph);
+            break;
+        }
+        case 2: {
+            graph_struct* graph = nullptr;
+            interactive_struct(&graph);
+            break;
+        }
+        default: {
+            cout<<"Wrong number!"<<endl;
+        }
+    }
+}
+
 int main() {
     srand(time(0));
-    demonstration();
+
+    int mode;
+    cout << "For interactive mode enter 1" << endl;
+    cout << "For demonstration mode enter 2" << endl;
+    cin>>mode;
+    if (mode == 1) {interactive();}
+    if (mode == 2) {demonstration();}
+
     return 0;
 }
