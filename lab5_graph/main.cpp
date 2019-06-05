@@ -8,11 +8,6 @@ using namespace std;
 
 const int max_vert_count = 20;
 
-bool operator < (pair<int,int> left, pair<int,int> right) {
-    if (left.second<right.second) {return true;}
-    return false;
-}
-
 struct graph_matrix {
     int adjacent[max_vert_count][max_vert_count];
     int vertex_count;
@@ -47,9 +42,25 @@ void add_to_matr (graph_matrix& graph, int vert1, int vert2, int weight = 1) {
 };
 
 void add_to_struct (graph_struct& graph, int vert1, int vert2, int weight = 1) {
-    graph.adjacent[vert1].push_back(make_pair(vert2, weight));
-    if (!graph.is_oriented) {
-        graph.adjacent[vert2].push_back(make_pair(vert1, weight));
+    bool already_in_graph = false;
+    for (int edge = 0; edge < (graph).adjacent[vert1].size(); edge++) {
+        if ((graph).adjacent[vert1][edge].first == vert2) {
+            already_in_graph = true;
+            (graph).adjacent[vert1][edge].second = weight;
+            if (!graph.is_oriented) {
+                for (int i = 0; i < graph.adjacent[vert2].size(); i++) {
+                    if (graph.adjacent[vert2][i].first == vert1) {
+                        (graph).adjacent[vert2][i].second = weight;
+                    }
+                }
+            }
+        }
+    }
+    if (!already_in_graph) {
+        graph.adjacent[vert1].push_back(make_pair(vert2, weight));
+        if (!graph.is_oriented) {
+            graph.adjacent[vert2].push_back(make_pair(vert1, weight));
+        }
     }
 };
 
@@ -72,14 +83,15 @@ void output_struct_graph (graph_struct& graph) {
     }
 }
 
-graph_matrix* create_random_matrg(int vertix_count, int edge_count, bool is_oriented = false, bool is_weighed = false) {
-    graph_matrix* graph = new graph_matrix(vertix_count);
+graph_matrix* create_random_matrg(int vertex_count, int edge_count, bool is_oriented = false, bool is_weighed = false) {
+    graph_matrix* graph = new graph_matrix(vertex_count);
     (*graph).is_oriented = is_oriented;
     int vert1, vert2, weight = 1;
     for (int i = 0; i < edge_count; i++) {
         do {
-            vert1 = rand() % vertix_count;
-            vert2 = rand() % vertix_count;
+            vert1 = rand() % vertex_count;
+            vert2 = rand() % vertex_count;
+            while (vert1 == vert2) {vert2 = rand()%vertex_count;}
         } while ((*graph).adjacent[vert1][vert2]!=0);
 
         if (is_weighed) {weight = rand()%9+1;}
@@ -91,17 +103,20 @@ graph_matrix* create_random_matrg(int vertix_count, int edge_count, bool is_orie
     return graph;
 }
 
-graph_struct* create_random_structg(int vertix_count, int edge_count, bool is_oriented = false, bool is_weighed = false) {
-    graph_struct* graph = new graph_struct(vertix_count);
+graph_struct* create_random_structg(int vertex_count, int edge_count, bool is_oriented = false, bool is_weighed = false) {
+    graph_struct* graph = new graph_struct(vertex_count);
     (*graph).is_oriented = is_oriented;
+
     int vert1, vert2, weight = 1;
-    bool used = false;
+    bool used;
     for (int i = 0; i < edge_count; i++) {
         do {
-            vert1 = rand() % vertix_count;
-            vert2 = rand() % vertix_count;
-            for (int i = 0; i < (*graph).adjacent[vert1].size(); i++) {
-                if (((*graph).adjacent[vert1])[i].first == vert2) {
+            used = false;
+            vert1 = rand() % vertex_count;
+            vert2 = rand() % vertex_count;
+            while (vert1 == vert2) {vert2 = rand()%vertex_count;}
+            for (int j = 0; j < (*graph).adjacent[vert1].size(); j++) {
+                if (((*graph).adjacent[vert1])[j].first == vert2) {
                     used = true;
                 }
             }
@@ -169,8 +184,8 @@ bool is_cyclic_matr (graph_matrix& graph) {
 
     for (int i = 0; i < graph.vertex_count; i++) {
         if (is_cyclic_matr_rec(i,visited,stack,graph)) {return true;}
-        return false;
     }
+    return false;
 }
 
 bool is_cyclic_struct_rec(int curr_vertex, bool* visited, bool *recStack, graph_struct& graph) {
@@ -180,8 +195,9 @@ bool is_cyclic_struct_rec(int curr_vertex, bool* visited, bool *recStack, graph_
         recStack[curr_vertex] = true;
 
         for(int i = 0; i < graph.adjacent[curr_vertex].size(); i++) {
-            if (!visited[i] && is_cyclic_struct_rec(i, visited, recStack, graph)) {return true;}
-            else if (recStack[i]) {return true;}
+            if (!visited[graph.adjacent[curr_vertex][i].first]
+            && is_cyclic_struct_rec(graph.adjacent[curr_vertex][i].first, visited, recStack, graph)) {return true;}
+            else if (recStack[graph.adjacent[curr_vertex][i].first]) {return true;}
         }
 
     }
@@ -200,8 +216,13 @@ bool is_cyclic_str (graph_struct& graph) {
 
     for (int i = 0; i < graph.vertex_count; i++) {
         if (is_cyclic_struct_rec(i,visited,stack,graph)) {return true;}
-        return false;
     }
+    return false;
+}
+
+bool compare_weight (pair<int,int> left, pair<int,int> right) {
+    if (left.second<right.second) {return true;}
+    return false;
 }
 
 void bfs_matr_rec(int curr_vertex, vector<bool>& visited, graph_matrix& graph, bool by_weight = false) {
@@ -221,7 +242,7 @@ void bfs_matr_rec(int curr_vertex, vector<bool>& visited, graph_matrix& graph, b
                 edges_weight.push_back(make_pair(i,graph.adjacent[curr_vertex][i]));
             }
         }
-        if (by_weight) {sort(edges_weight.begin(), edges_weight.end());}
+        if (by_weight) {sort(edges_weight.begin(), edges_weight.end(),compare_weight);}
 
         for (int i = 0; i < edges_weight.size(); i++) {
             if (!visited[edges_weight[i].first]) {
@@ -238,6 +259,7 @@ void bfs_matr(graph_matrix& graph, bool by_weight) {
     for (int curr_vertex = 0; curr_vertex < graph.vertex_count; curr_vertex++) {
         if (visited[curr_vertex] == false) {bfs_matr_rec(curr_vertex, visited, graph, by_weight);}
     }
+    cout<<endl;
 }
 
 void bfs_struct_rec(int curr_vertex, vector<bool>& visited, graph_struct& graph, bool by_weight = false) {
@@ -255,7 +277,7 @@ void bfs_struct_rec(int curr_vertex, vector<bool>& visited, graph_struct& graph,
         for (int i = 0; i < graph.adjacent[curr_vertex].size(); i++) {
             edges_weight.push_back(graph.adjacent[curr_vertex][i]);
         }
-        if (by_weight) {sort(edges_weight.begin(), edges_weight.end());}
+        if (by_weight) {sort(edges_weight.begin(), edges_weight.end(),compare_weight);}
 
         for (int i = 0; i < edges_weight.size(); i++) {
             if (!visited[edges_weight[i].first]) {
@@ -266,32 +288,41 @@ void bfs_struct_rec(int curr_vertex, vector<bool>& visited, graph_struct& graph,
     }
 }
 
-void bfs_struct(graph_struct& graph, bool by_weight) {
+void bfs_struct(graph_struct& graph, bool by_weight = false) {
     vector<bool> visited(max_vert_count, false);
     for (int curr_vertex = 0; curr_vertex < graph.vertex_count; curr_vertex++) {
         if (visited[curr_vertex] == false) {bfs_struct_rec(curr_vertex, visited, graph, by_weight);}
     }
+    cout<<endl;
 }
 
 vector<vector<int>> Floyd_matr (graph_matrix& graph) {
-    vector<vector<int>> distance[max_vert_count];
+    vector<vector<int>> distance;
 
+    int matrix[graph.vertex_count][graph.vertex_count];
     for (int i = 0; i < graph.vertex_count; i++) {
         for (int j = 0; j < graph.vertex_count; j++) {
-            distance[i][j].push_back(graph.adjacent[i][j]);
+            matrix[i][j] = graph.adjacent[i][j];
         }
     }
 
-    for (int k = 0; k < graph.vertex_count; k++) {
-        for (int i = 0; i < graph.vertex_count; i++) {
-            for (int j = 0; j < graph.vertex_count; j++) {
-                if ((*distance)[i][k] + (*distance)[k][j] < (*distance)[i][j]) {
-                    (*distance)[i][j] = (*distance)[i][k] + (*distance)[k][j];
+    for (int i = 0; i < graph.vertex_count; i++) {
+        for (int j = 0; j < graph.vertex_count; j++) {
+            for (int k = 0; k < graph.vertex_count; k++) {
+                if (matrix[j][k] > matrix[j][i] + matrix[i][k] && (matrix[j][i]!=0) && matrix[i][k]!=0) {
+                    matrix[j][k] = matrix[j][i] + matrix[i][k];
                 }
             }
         }
     }
-    return *distance;
+    for (int i = 0; i < graph.vertex_count; i++) {
+        vector<int> row;
+        for (int j = 0; j < graph.vertex_count; j++) {
+            row.push_back(matrix[i][j]);
+        }
+        distance.push_back(row);
+    }
+    return distance;
 }
 
 vector<int> Floyd_matr_all_for_one (graph_matrix& graph, int vertex) {
@@ -310,32 +341,38 @@ int Floyd_matr_between_two (graph_matrix& graph, int vertex1, int vertex2) {
 }
 
 vector<vector<int>> Floyd_struct (graph_struct& graph) {
-    vector<vector<int>> distance[graph.vertex_count];
+    vector<vector<int>> distance;
 
-    double matrix[graph.vertex_count][graph.vertex_count];
+    int matrix[graph.vertex_count][graph.vertex_count];
     for (int i = 0; i < graph.vertex_count; i++) {
         for (int j = 0; j < graph.vertex_count; j++) {
-            matrix[i][j] = INT32_MAX;
+            matrix[i][j] = 0;
         }
     }
 
     for (int i = 0; i < graph.vertex_count; i++) {
         for (int j = 0; j < graph.adjacent[i].size(); j++) {
             matrix[i][graph.adjacent[i][j].first] = graph.adjacent[i][j].second;
-            matrix[graph.adjacent[i][j].first][i] = graph.adjacent[i][j].second;
         }
     }
 
     for (int i = 0; i < graph.vertex_count; i++) {
         for (int j = 0; j < graph.vertex_count; j++) {
             for (int k = 0; k < graph.vertex_count; k++) {
-                if (matrix[j][k] > matrix[j][i] + matrix[i][k]) {
+                if (matrix[j][k] > matrix[j][i] + matrix[i][k] && (matrix[j][i]!=0) && matrix[i][k]!=0) {
                     matrix[j][k] = matrix[j][i] + matrix[i][k];
                 }
             }
         }
     }
-    return *distance;
+    for (int i = 0; i < graph.vertex_count; i++) {
+        vector<int> row;
+        for (int j = 0; j < graph.vertex_count; j++) {
+            row.push_back(matrix[i][j]);
+        }
+        distance.push_back(row);
+    }
+    return distance;
 }
 
 vector<int> Floyd_struct_all_for_one (graph_struct& graph, int vertex) {
@@ -369,8 +406,8 @@ vector<int> topological_sort_matr(graph_matrix& graph) {
     vector<bool> visited;
     vector<int> result;
 
-    if (is_cyclic_matr(graph) || !graph.is_oriented) {
-        result.push_back(0);
+    if (!graph.is_oriented || is_cyclic_matr(graph)) {
+        cout<<"This graph is not acyclic and directed"<<endl;
         return result;
     }
 
@@ -387,7 +424,7 @@ void dfs_for_topological_struct(graph_struct& graph, int vertex, vector<bool>& v
 
     visited[vertex] = true;
     for (int i = 0; i < graph.adjacent[vertex].size(); i++) {
-            dfs_for_topological_struct(graph, i, visited, result);
+            dfs_for_topological_struct(graph, graph.adjacent[vertex][i].first, visited, result);
     }
 
     result.push_back(vertex);
@@ -397,8 +434,8 @@ vector<int> topological_sort_struct(graph_struct& graph) {
     vector<bool> visited;
     vector<int> result;
 
-    if (is_cyclic_str(graph) || !graph.is_oriented) {
-        result.push_back(0);
+    if (!graph.is_oriented || is_cyclic_str(graph)) {
+        cout<<"This graph is not acyclic and directed"<<endl;
         return result;
     }
 
@@ -411,17 +448,19 @@ vector<int> topological_sort_struct(graph_struct& graph) {
     return result;
 }
 
-graph_matrix* bfs_matr_for_span(vector<bool>& visited, graph_matrix& graph, int curr_vertex = 0, bool by_weight = false) {
+graph_matrix* bfs_matr_for_span(graph_matrix& graph, bool by_weight = false) {
     queue<int> q;
     vector<pair<int, int>> edges_weight;
     vector<bool> already_connected;
+    vector<bool> visited;
     graph_matrix* result = new graph_matrix(graph.vertex_count);
+    int curr_vertex = 0;
 
     for (int i = 0; i < graph.vertex_count; i++) {
-        already_connected[i] = false;
+        already_connected.push_back(false);
+        visited.push_back(false);
     }
 
-    visited[curr_vertex] = true;
     q.push(curr_vertex);
     already_connected[curr_vertex] = true;
 
@@ -432,6 +471,7 @@ graph_matrix* bfs_matr_for_span(vector<bool>& visited, graph_matrix& graph, int 
         for (int i = 0; i < graph.vertex_count; i++) {
             if (graph.adjacent[curr_vertex][i] != 0 && !already_connected[i]) {
                 (*result).adjacent[curr_vertex][i] = graph.adjacent[curr_vertex][i];
+                if (!graph.is_oriented) {(*result).adjacent[i][curr_vertex] = graph.adjacent[curr_vertex][i];}
                 already_connected[i] = true;
             }
         }
@@ -453,16 +493,19 @@ graph_matrix* bfs_matr_for_span(vector<bool>& visited, graph_matrix& graph, int 
     return result;
 }
 
-graph_struct* bfs_struct_for_span(vector<bool>& visited, graph_struct& graph, int curr_vertex = 0, bool by_weight = false) {
+graph_struct* bfs_struct_for_span(graph_struct& graph, bool by_weight = false) {
     queue<int> q;
     vector<pair<int, int>> edges_weight;
     vector<bool> already_connected;
     graph_struct* result = new graph_struct(graph.vertex_count);
+    vector<bool> visited;
 
     for (int i = 0; i < graph.vertex_count; i++) {
-        already_connected[i] = false;
+        already_connected.push_back(false);
+        visited.push_back(false);
     }
 
+    int curr_vertex = 0;
     visited[curr_vertex] = true;
     q.push(curr_vertex);
     already_connected[curr_vertex] = true;
@@ -474,7 +517,7 @@ graph_struct* bfs_struct_for_span(vector<bool>& visited, graph_struct& graph, in
         for (int i = 0; i < graph.adjacent[curr_vertex].size(); i++) {
             if (!already_connected[graph.adjacent[curr_vertex][i].first]) {
                 (*result).adjacent[curr_vertex].push_back(graph.adjacent[curr_vertex][i]);
-
+                if (!graph.is_oriented) {(*result).adjacent[graph.adjacent[curr_vertex][i].first].push_back(make_pair(curr_vertex,graph.adjacent[curr_vertex][i].second));}
                 already_connected[graph.adjacent[curr_vertex][i].first] = true;
             }
         }
@@ -645,8 +688,205 @@ int weight_of_struct_graph (graph_struct& graph) {
     return weight/2;
 }
 
+void demonstration_add_to_matr (graph_matrix& graph, int verts) {
+    int vert1 = rand()%verts;
+    int vert2 = rand()%verts;
+    while (vert1 == vert2) {vert2 = rand()%verts;}
+    int weight = rand()%9+1;
+    cout<<"adding new edge between "<<vert1<<" and "<<vert2<<" with weight "<<weight<<": "<<endl;
+    add_to_matr(graph, vert1, vert2, weight);
+    output_matrix_graph(graph);
+}
+
+void demonstration_add_to_struct (graph_struct& graph, int verts) {
+    int vert1 = rand()%verts;
+    int vert2 = rand()%verts;
+    while (vert1 == vert2) {vert2 = rand()%verts;}
+    int weight = rand()%9+1;
+    cout<<"adding new edge between "<<vert1<<" and "<<vert2<<" with weight "<<weight<<": "<<endl;
+    add_to_struct(graph, vert1, vert2, weight);
+    output_struct_graph(graph);
+}
+
+void demonstration() {
+    cout<<"1. Graph represented as matrix."<<endl;
+    cout<<"Unit 0:"<<endl;
+    int verts = rand()%5+5;
+    int edges = rand()%10;
+    cout<<"created random oriented weighed graph with "<<verts<<" vertices and "<<edges<<" egdes:"<<endl;
+    graph_matrix* mgraph = create_random_matrg(verts, edges, true, true);
+    output_matrix_graph(*mgraph);
+
+    demonstration_add_to_matr(*mgraph, verts);
+    demonstration_add_to_matr(*mgraph, verts);
+    demonstration_add_to_matr(*mgraph, verts);
+    demonstration_add_to_matr(*mgraph, verts);
+
+    cout<<"transform matrix to structure representation: "<<endl;
+    graph_struct* sgraph = matr_to_struct(*mgraph);
+    output_struct_graph(*sgraph);
+
+    cout<<"Unit 1:"<<endl;
+    output_matrix_graph(*mgraph);
+    cout<<"Is this graph acyclic? ";
+    if (is_cyclic_matr(*mgraph)) {cout<<"no, it has cycle."<<endl;}
+    else {cout<<"yes. "<<endl;}
+    cout<<"Adding cycle to graph 1-2-3-1:"<<endl;
+    add_to_matr(*mgraph, 1, 2, rand()%9+1);
+    add_to_matr(*mgraph, 2, 3, rand()%9+1);
+    add_to_matr(*mgraph, 3, 1, rand()%9+1);
+    output_matrix_graph(*mgraph);
+    cout<<"Is this graph acyclic? ";
+    if (is_cyclic_matr(*mgraph)) {cout<<"no, it has cycle."<<endl;}
+    else {cout<<"yes. "<<endl;}
+
+    cout<<"Unit 2:"<<endl;
+    output_matrix_graph(*mgraph);
+    cout<<"BFS by number of vertex: ";
+    bfs_matr(*mgraph, false);
+    cout<<"BFS by weight: ";
+    bfs_matr(*mgraph, true);
+
+    cout<<"Unit 3:"<<endl;
+    output_matrix_graph(*mgraph);
+    cout<<"Floyd's algorithm."<<endl;
+    cout<<"Minimal distance between all vertices in graph: "<<endl;
+    vector<vector<int>> result = Floyd_matr(*mgraph);
+    for (int i = 0; i < result.size(); i++) {
+        for (int j = 0; j < result.size(); j++) {
+            cout<<result[i][j]<<"  ";
+        }
+        cout<<endl;
+    }
+    int vert1 = rand()%((*mgraph).vertex_count);
+    cout<<"Minimal distance between vertex "<<vert1<<" and all other vertices:"<<endl;
+    result[0] = Floyd_matr_all_for_one(*mgraph, vert1);
+    for (int i = 0; i < (*mgraph).vertex_count; i++) {
+        cout<<result[0][i]<<"  ";
+    }
+    cout<<endl;
+    int vert2 = rand()%((*mgraph).vertex_count);
+    vert1 =  rand()%((*mgraph).vertex_count);
+    cout<<"Minimal distance between vertex "<<vert1<<" and vertex "<<vert2<<" : "
+        <<Floyd_matr_between_two(*mgraph, vert1,vert2)<<endl;
+
+    cout<<"Unit 4: "<<endl;
+    while (is_cyclic_matr(*mgraph)) {mgraph = create_random_matrg(6,6,true);}
+    output_matrix_graph(*mgraph);
+    cout<<"Topological sort by dfs."<<endl;
+    result[0] = topological_sort_matr(*mgraph);
+    if (!result[0].empty()) {
+        for (int i = 0; i < (*mgraph).vertex_count; i++) {
+            cout << result[0][i] << "  ";
+        }
+        cout << endl;
+    }
+
+    cout<<"Unit 5: "<<endl;
+    mgraph = create_random_matrg(6,10,false,true);
+    output_matrix_graph(*mgraph);
+    graph_matrix* matr_result = bfs_matr_for_span(*mgraph);
+    cout<<"Spanning tree by bfs."<<endl;
+    output_matrix_graph(*matr_result);
+    cout<<"Weight of tree: "<<weight_of_matr_graph(*matr_result)<<endl;
+
+    cout<<"Unit 6: "<<endl;
+    cout<<"Minimal spanning tree by Boruvka's algorithm:"<<endl;
+    matr_result = boruvka_matr(*mgraph);
+    output_matrix_graph(*matr_result);
+    cout<<"Weight of tree: "<<weight_of_matr_graph(*matr_result)<<endl;
+
+    cout<<"2. Graph represented as structure."<<endl;
+    cout<<"Unit 0:"<<endl;
+    verts = rand()%5+5;
+    edges = rand()%10;
+    cout<<"created random oriented weighed graph with "<<verts<<" vertices and "<<edges<<" egdes:"<<endl;
+    sgraph = create_random_structg(verts, edges, true, true);
+    output_struct_graph(*sgraph);
+
+    demonstration_add_to_struct(*sgraph, verts);
+    demonstration_add_to_struct(*sgraph, verts);
+    demonstration_add_to_struct(*sgraph, verts);
+    demonstration_add_to_struct(*sgraph, verts);
+
+    cout<<"transform structure to matrix representation: "<<endl;
+    mgraph = struct_to_matr(*sgraph);
+    output_matrix_graph(*mgraph);
+
+    cout<<"Unit 1:"<<endl;
+    output_struct_graph(*sgraph);
+    cout<<"Is this graph acyclic? ";
+    if (is_cyclic_str(*sgraph)) {cout<<"no, it has cycle."<<endl;}
+    else {cout<<"yes. "<<endl;}
+    cout<<"Adding cycle to graph 1-2-3-1:"<<endl;
+    add_to_struct(*sgraph, 1, 2, rand()%9+1);
+    add_to_struct(*sgraph, 2, 3, rand()%9+1);
+    add_to_struct(*sgraph, 3, 1, rand()%9+1);
+    output_struct_graph(*sgraph);
+    cout<<"Is this graph acyclic? ";
+    if (is_cyclic_str(*sgraph)) {cout<<"no, it has cycle."<<endl;}
+    else {cout<<"yes. "<<endl;}
+
+    cout<<"Unit 2:"<<endl;
+    output_struct_graph(*sgraph);
+    cout<<"BFS by number of vertex: ";
+    bfs_struct(*sgraph, false);
+    cout<<"BFS by weight: ";
+    bfs_struct(*sgraph, true);
+
+    cout<<"Unit 3:"<<endl;
+    output_struct_graph(*sgraph);
+    cout<<"Floyd's algorithm."<<endl;
+    cout<<"Minimal distance between all vertices in graph: "<<endl;
+    result = Floyd_struct(*sgraph);
+    for (int i = 0; i < result.size(); i++) {
+        for (int j = 0; j < result.size(); j++) {
+            cout<<result[i][j]<<"  ";
+        }
+        cout<<endl;
+    }
+    vert1 = rand()%((*sgraph).vertex_count);
+    cout<<"Minimal distance between vertex "<<vert1<<" and all other vertices:"<<endl;
+    result[0] = Floyd_struct_all_for_one(*sgraph, vert1);
+    for (int i = 0; i < (*sgraph).vertex_count; i++) {
+        cout<<result[0][i]<<"  ";
+    }
+    cout<<endl;
+    vert2 = rand()%((*sgraph).vertex_count);
+    vert1 =  rand()%((*sgraph).vertex_count);
+    cout<<"Minimal distance between vertex "<<vert1<<" and vertex "<<vert2<<" : "
+    <<Floyd_struct_between_two(*sgraph, vert1,vert2)<<endl;
+
+    cout<<"Unit 4: "<<endl;
+    while (is_cyclic_str(*sgraph)) {sgraph = create_random_structg(6,6,true);}
+    output_struct_graph(*sgraph);
+    cout<<"Topological sort by dfs."<<endl;
+    result[0] = topological_sort_struct(*sgraph);
+    if (!result[0].empty()) {
+        for (int i = 0; i < (*sgraph).vertex_count; i++) {
+            cout << result[0][i] << "  ";
+        }
+        cout << endl;
+    }
+
+    cout<<"Unit 5: "<<endl;
+    sgraph = create_random_structg(6,10,false,true);
+    output_struct_graph(*sgraph);
+    graph_struct* struct_result = bfs_struct_for_span(*sgraph);
+    cout<<"Spanning tree by bfs."<<endl;
+    output_struct_graph(*struct_result);
+    cout<<"Weight of tree: "<<weight_of_struct_graph(*struct_result)<<endl;
+
+    cout<<"Unit 6: "<<endl;
+    cout<<"Minimal spanning tree by Boruvka's algorithm:"<<endl;
+    struct_result = boruvka_struct(*sgraph);
+    output_struct_graph(*struct_result);
+    cout<<"Weight of tree: "<<weight_of_struct_graph(*struct_result)<<endl;
+
+}
+
 int main() {
     srand(time(0));
-
+    demonstration();
     return 0;
 }
