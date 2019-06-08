@@ -1,8 +1,8 @@
-#include<iostream>
-#include<vector>
-#include<algorithm>
-#include<queue>
-#include"tm_functions.h"
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <queue>
+#include "tm_functions.h"
 
 using namespace std;
 
