@@ -912,6 +912,7 @@ void benchmark() {
         } else { count = count_sec + count; }
     }
 }
+
 int main() {
     srand(time(0));
 
