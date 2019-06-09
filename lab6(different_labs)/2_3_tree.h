@@ -72,7 +72,6 @@ void insert_tt (tt_tree** root, tm insert_data, tt_tree* main_root = nullptr) {
                 }
             }
     }
-
     if (insert_data < (*root)->options[0]) {
         if ((*root)->left) {
             insert_tt(&(*root)->left, insert_data, main_root);
@@ -144,24 +143,23 @@ void insert_tt (tt_tree** root, tm insert_data, tt_tree* main_root = nullptr) {
                 side = 2;
             }
 
+            vector<tm> temp_node = (*root)->options;
+            temp_node.push_back(insert_data);
+            sort(temp_node.begin(), temp_node.end(),[](tm left, tm right){return left < right;});
 
-                vector<tm> temp_node = (*root)->options;
-                temp_node.push_back(insert_data);
-                sort(temp_node.begin(), temp_node.end(),[](tm left, tm right){return left < right;});
+            vector<tm> temp_node_parent = (*root)->parent->options;
+            temp_node_parent.push_back(temp_node[1]);
+            sort(temp_node_parent.begin(), temp_node_parent.end(),[](tm left, tm right){return left < right;});
+            tt_tree* parent_node = (*root)->parent;
 
-                vector<tm> temp_node_parent = (*root)->parent->options;
-                temp_node_parent.push_back(temp_node[1]);
-                sort(temp_node_parent.begin(), temp_node_parent.end(),[](tm left, tm right){return left < right;});
-                tt_tree* parent_node = (*root)->parent;
+            parent_node->options.clear();
+            parent_node->options.push_back(temp_node_parent[1]);
 
-                parent_node->options.clear();
-                parent_node->options.push_back(temp_node_parent[1]);
+            parent_node->left->options.clear();
+            parent_node->left->options.push_back(temp_node_parent[0]);
 
-                parent_node->left->options.clear();
-                parent_node->left->options.push_back(temp_node_parent[0]);
-
-                parent_node->middle->options.clear();
-                parent_node->middle->options.push_back(temp_node_parent[2]);
+            parent_node->middle->options.clear();
+            parent_node->middle->options.push_back(temp_node_parent[2]);
 
             parent_node->right = nullptr;
 
@@ -214,12 +212,36 @@ void delete_by_value_tt (tm deleting_value, tt_tree** root, tt_tree* rec_root = 
         if (rec_root->left && (rec_root->left->options[0] == deleting_value||rec_root->left->options[1] == deleting_value)) {
             q.push(rec_root->left);
             rec_root->left = nullptr;
+            if (rec_root->middle) {
+                q.push(rec_root->middle);
+                rec_root->middle = nullptr;
+            }
+            if (rec_root->right) {
+                q.push(rec_root->right);
+                rec_root->right = nullptr;
+            }
         } else if (rec_root->middle && (rec_root->middle->options[0] == deleting_value||rec_root->middle->options[1] == deleting_value)) {
             q.push(rec_root->middle);
             rec_root->middle = nullptr;
+            if (rec_root->left) {
+                q.push(rec_root->left);
+                rec_root->left = nullptr;
+            }
+            if (rec_root->right) {
+                q.push(rec_root->right);
+                rec_root->right = nullptr;
+            }
         } else if (rec_root->right && (rec_root->right->options[0] == deleting_value||rec_root->right->options[1] == deleting_value)) {
             q.push(rec_root->right);
             rec_root->right = nullptr;
+            if (rec_root->left) {
+                q.push(rec_root->left);
+                rec_root->left = nullptr;
+            }
+            if (rec_root->middle) {
+                q.push(rec_root->middle);
+                rec_root->middle = nullptr;
+            }
         } else if (rec_root == *root && ((*root)->options[0] == deleting_value||(*root)->options[1] == deleting_value)) {
             q.push(rec_root);
             (*root) = nullptr;
